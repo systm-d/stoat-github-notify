@@ -1,0 +1,20 @@
+name: Test Stoat notification
+
+on:
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send Stoat test notification
+        uses: ./
+        with:
+          webhook_url: ${{ secrets.STOAT_WEBHOOK_URL }}
+          event: custom
+          title: "Stoat GitHub Notify test"
+          message: "Notification sent from GitHub Actions."
+          fail_on_error: true
