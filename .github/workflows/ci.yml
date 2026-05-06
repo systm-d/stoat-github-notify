@@ -26,3 +26,11 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+      - name: Notify Stoat on failure
+        if: failure()
+        uses: ./
+        with:
+          webhook_url: ${{ secrets.STOAT_WEBHOOK_URL }}
+          event: ci_failed
+          fail_on_error: false

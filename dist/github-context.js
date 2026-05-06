@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 export function readGitHubContext(env = process.env) {
     return {
         eventName: env.GITHUB_EVENT_NAME || "workflow_run",
@@ -7,6 +8,9 @@ export function readGitHubContext(env = process.env) {
         sha: env.GITHUB_SHA || "",
         runId: env.GITHUB_RUN_ID || "",
         serverUrl: env.GITHUB_SERVER_URL || "https://github.com",
+        workflow: env.GITHUB_WORKFLOW || "",
+        job: env.GITHUB_JOB || "",
+        payload: readEventPayload(env.GITHUB_EVENT_PATH),
     };
 }
 export function buildRunUrl(context) {
@@ -14,4 +18,19 @@ export function buildRunUrl(context) {
         return "";
     }
     return `${context.serverUrl}/${context.repository}/actions/runs/${context.runId}`;
+}
+function readEventPayload(path) {
+    if (!path) {
+        return {};
+    }
+    try {
+        const parsed = JSON.parse(readFileSync(path, "utf8"));
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            return parsed;
+        }
+    }
+    catch {
+        return {};
+    }
+    return {};
 }

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 export interface GitHubContext {
   eventName: string;
   actor: string;
@@ -6,6 +8,9 @@ export interface GitHubContext {
   sha: string;
   runId: string;
   serverUrl: string;
+  workflow: string;
+  job: string;
+  payload: Record<string, unknown>;
 }
 
 export function readGitHubContext(env: NodeJS.ProcessEnv = process.env): GitHubContext {
@@ -17,6 +22,9 @@ export function readGitHubContext(env: NodeJS.ProcessEnv = process.env): GitHubC
     sha: env.GITHUB_SHA || "",
     runId: env.GITHUB_RUN_ID || "",
     serverUrl: env.GITHUB_SERVER_URL || "https://github.com",
+    workflow: env.GITHUB_WORKFLOW || "",
+    job: env.GITHUB_JOB || "",
+    payload: readEventPayload(env.GITHUB_EVENT_PATH),
   };
 }
 
@@ -26,4 +34,22 @@ export function buildRunUrl(context: GitHubContext): string {
   }
 
   return `${context.serverUrl}/${context.repository}/actions/runs/${context.runId}`;
+}
+
+function readEventPayload(path?: string): Record<string, unknown> {
+  if (!path) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
+
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    return {};
+  }
+
+  return {};
 }

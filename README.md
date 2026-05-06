@@ -45,6 +45,23 @@ Send a custom message:
     message: "The Docker image is available."
 ```
 
+Notify on a published release:
+
+```yaml
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: systm-d/stoat-github-notify@v0.1.0
+        with:
+          webhook_url: ${{ secrets.STOAT_WEBHOOK_URL }}
+          event: release_published
+```
+
 ## Inputs
 
 | Input | Required | Default | Description |
@@ -61,6 +78,43 @@ Send a custom message:
 | `include_run_url` | no | `true` | Include the GitHub Actions run URL. |
 | `fail_on_error` | no | `false` | Fail the workflow if the Stoat request fails. |
 | `timeout_ms` | no | `10000` | HTTP timeout in milliseconds. |
+
+## Event types
+
+Use `event: auto` to infer the template from `GITHUB_EVENT_NAME` when possible. For CI success or failure notifications, set the event explicitly from a conditional step:
+
+- `ci_success`: successful workflow or job.
+- `ci_failed`: failed workflow or job.
+- `release_published`: published release, with release name, tag, and URL when available.
+- `deployment_success`: deployment status notification.
+- `deployment_failed`: failed deployment status notification.
+- `pull_request`: pull request update, with PR number, title, state, and URL when available.
+- `push`: push notification, with pusher and compare URL when available.
+- `custom`: custom title and message.
+
+## Release process
+
+Create immutable version tags for consumers:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Consumers should pin a version:
+
+```yaml
+uses: systm-d/stoat-github-notify@v0.1.0
+```
+
+Move the `v1` tag only after the action is stable enough for broad reuse.
+
+## Troubleshooting
+
+- No message in Stoat: confirm the workflow has a step using this action. A normal CI workflow does not notify unless the action is called.
+- Missing secret: add `STOAT_WEBHOOK_URL` under repository or organization Actions secrets.
+- Hidden delivery failures: set `fail_on_error: true` while testing.
+- Bad payload or rate limit: inspect the GitHub Actions logs. The webhook URL is masked.
 
 ## Development
 

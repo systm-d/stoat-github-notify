@@ -24,7 +24,8 @@ export function resolveEvent(event, context) {
         return "release_published";
     }
     if (context.eventName === "deployment_status") {
-        return "deployment_success";
+        const state = getString(context.payload, ["deployment_status", "state"]);
+        return state === "failure" || state === "error" ? "deployment_failed" : "deployment_success";
     }
     if (context.eventName === "pull_request") {
         return "pull_request";
@@ -59,7 +60,15 @@ function buildDefaultContent(title, context, runUrl) {
     return `${title} on ${context.repository}${suffix}`;
 }
 function buildDescription(config, context, runUrl) {
-    const lines = [`Event: ${context.eventName}`];
+    const event = resolveEvent(config.event, context);
+    const lines = buildEventLines(event, context);
+    lines.push(`Event: ${context.eventName}`);
+    if (context.workflow) {
+        lines.push(`Workflow: ${context.workflow}`);
+    }
+    if (context.job) {
+        lines.push(`Job: ${context.job}`);
+    }
     if (config.includeRepository) {
         lines.push(`Repository: ${context.repository}`);
     }
@@ -76,4 +85,66 @@ function buildDescription(config, context, runUrl) {
         lines.push(`Run: ${runUrl}`);
     }
     return lines.join("\n");
+}
+function buildEventLines(event, context) {
+    switch (event) {
+        case "release_published":
+            return compactLines([
+                field("Release", getString(context.payload, ["release", "name"]) || getString(context.payload, ["release", "tag_name"])),
+                field("Tag", getString(context.payload, ["release", "tag_name"])),
+                field("URL", getString(context.payload, ["release", "html_url"])),
+            ]);
+        case "deployment_success":
+        case "deployment_failed":
+            return compactLines([
+                field("Environment", getString(context.payload, ["deployment", "environment"])),
+                field("State", getString(context.payload, ["deployment_status", "state"])),
+                field("Deployment URL", getString(context.payload, ["deployment_status", "target_url"])),
+            ]);
+        case "pull_request":
+            return compactLines([
+                field("PR", formatPullRequest(context)),
+                field("State", getString(context.payload, ["pull_request", "state"])),
+                field("URL", getString(context.payload, ["pull_request", "html_url"])),
+            ]);
+        case "push":
+            return compactLines([
+                field("Pusher", getString(context.payload, ["pusher", "name"])),
+                field("Compare", getString(context.payload, ["compare"])),
+            ]);
+        default:
+            return [];
+    }
+}
+function formatPullRequest(context) {
+    const number = getNumber(context.payload, ["pull_request", "number"]);
+    const title = getString(context.payload, ["pull_request", "title"]);
+    if (number && title) {
+        return `#${number} ${title}`;
+    }
+    return title || "";
+}
+function field(name, value) {
+    return value ? `${name}: ${value}` : "";
+}
+function compactLines(lines) {
+    return lines.filter(Boolean);
+}
+function getString(payload, path) {
+    const value = getValue(payload, path);
+    return typeof value === "string" ? value : "";
+}
+function getNumber(payload, path) {
+    const value = getValue(payload, path);
+    return typeof value === "number" ? value : undefined;
+}
+function getValue(payload, path) {
+    let current = payload;
+    for (const key of path) {
+        if (!current || typeof current !== "object" || Array.isArray(current)) {
+            return undefined;
+        }
+        current = current[key];
+    }
+    return current;
 }
