@@ -1,0 +1,57 @@
+name: "Stoat GitHub Notify"
+description: "Publish GitHub Actions, CI, release and deployment events to Stoat"
+author: "systm-d"
+
+inputs:
+  webhook_url:
+    description: "Stoat webhook URL"
+    required: true
+  event:
+    description: "Event type: auto, ci_success, ci_failed, release_published, deployment_success, deployment_failed, pull_request, push, custom"
+    required: false
+    default: "auto"
+  title:
+    description: "Custom notification title"
+    required: false
+  message:
+    description: "Custom notification message"
+    required: false
+  username:
+    description: "Webhook display name"
+    required: false
+    default: "GitHub"
+  avatar_url:
+    description: "Webhook avatar URL"
+    required: false
+  include_actor:
+    description: "Include GitHub actor"
+    required: false
+    default: "true"
+  include_repository:
+    description: "Include repository name"
+    required: false
+    default: "true"
+  include_ref:
+    description: "Include branch or tag ref"
+    required: false
+    default: "true"
+  include_run_url:
+    description: "Include GitHub Actions run URL"
+    required: false
+    default: "true"
+  fail_on_error:
+    description: "Fail the workflow if Stoat notification fails"
+    required: false
+    default: "false"
+  timeout_ms:
+    description: "HTTP timeout in milliseconds"
+    required: false
+    default: "10000"
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
+
+branding:
+  icon: "message-square"
+  color: "gray-dark"

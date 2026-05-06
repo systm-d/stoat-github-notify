@@ -1,0 +1,25 @@
+{
+  "name": "stoat-github-notify",
+  "version": "0.1.0",
+  "description": "A lightweight GitHub Action to publish CI, release, deployment and repository events to Stoat channels.",
+  "type": "module",
+  "packageManager": "pnpm@10.18.1",
+  "private": false,
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "github-action",
+    "stoat",
+    "notifications",
+    "ci"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
+  }
+}
