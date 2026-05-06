@@ -5,10 +5,17 @@ on:
     branches:
       - main
   pull_request:
+  release:
+    types:
+      - published
+  deployment_status:
 
 jobs:
   validate:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    env:
+      STOAT_WEBHOOK_URL: ${{ secrets.STOAT_WEBHOOK_URL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -27,10 +34,48 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
-      - name: Notify Stoat on failure
-        if: failure()
-        uses: ./
+      - name: Notify Stoat on success
+        if: success() && env.STOAT_WEBHOOK_URL != ''
+        uses: systm-d/stoat-github-notify@main
         with:
-          webhook_url: ${{ secrets.STOAT_WEBHOOK_URL }}
+          webhook_url: ${{ env.STOAT_WEBHOOK_URL }}
+          event: ci_success
+          fail_on_error: false
+
+      - name: Notify Stoat on failure
+        if: failure() && env.STOAT_WEBHOOK_URL != ''
+        uses: systm-d/stoat-github-notify@main
+        with:
+          webhook_url: ${{ env.STOAT_WEBHOOK_URL }}
           event: ci_failed
+          fail_on_error: false
+
+  notify-release:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    env:
+      STOAT_WEBHOOK_URL: ${{ secrets.STOAT_WEBHOOK_URL }}
+
+    steps:
+      - name: Notify Stoat about release
+        if: env.STOAT_WEBHOOK_URL != ''
+        uses: systm-d/stoat-github-notify@main
+        with:
+          webhook_url: ${{ env.STOAT_WEBHOOK_URL }}
+          event: release_published
+          fail_on_error: false
+
+  notify-deployment:
+    if: github.event_name == 'deployment_status'
+    runs-on: ubuntu-latest
+    env:
+      STOAT_WEBHOOK_URL: ${{ secrets.STOAT_WEBHOOK_URL }}
+
+    steps:
+      - name: Notify Stoat about deployment
+        if: env.STOAT_WEBHOOK_URL != ''
+        uses: systm-d/stoat-github-notify@main
+        with:
+          webhook_url: ${{ env.STOAT_WEBHOOK_URL }}
+          event: auto
           fail_on_error: false
