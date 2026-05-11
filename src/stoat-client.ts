@@ -2,31 +2,38 @@ import type { StoatPayload } from "./message-builder.js";
 
 export interface SendOptions {
   timeoutMs: number;
+  retryCount: number;
+  retryDelayMs: number;
   fetchFn?: typeof fetch;
   sleepFn?: (ms: number) => Promise<void>;
 }
 
-export async function sendStoatWebhook(payload: StoatPayload, webhookUrl: string, options: SendOptions): Promise<void> {
+export async function sendStoatWebhook(
+  payload: StoatPayload,
+  webhookUrl: string,
+  options: SendOptions,
+): Promise<number> {
   const fetchFn = options.fetchFn || fetch;
   const sleepFn = options.sleepFn || sleep;
+  const maxAttempts = 1 + options.retryCount;
 
-  const response = await postPayload(fetchFn, webhookUrl, payload, options.timeoutMs);
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const response = await postPayload(fetchFn, webhookUrl, payload, options.timeoutMs);
 
-  if (response.status === 429) {
-    const retryAfter = await readRetryAfter(response);
-    await sleepFn(retryAfter);
-
-    const retryResponse = await postPayload(fetchFn, webhookUrl, payload, options.timeoutMs);
-    if (!retryResponse.ok) {
-      throw new Error(await buildFailureMessage(retryResponse));
+    if (response.ok) {
+      return attempt;
     }
 
-    return;
-  }
+    if (response.status === 429 && attempt < maxAttempts) {
+      const delay = await readRetryAfter(response, options.retryDelayMs);
+      await sleepFn(delay);
+      continue;
+    }
 
-  if (!response.ok) {
     throw new Error(await buildFailureMessage(response));
   }
+
+  throw new Error("Stoat notification failed: no attempts made");
 }
 
 async function postPayload(
@@ -52,14 +59,14 @@ async function postPayload(
   }
 }
 
-async function readRetryAfter(response: Response): Promise<number> {
+async function readRetryAfter(response: Response, fallbackMs: number): Promise<number> {
   try {
     const body = (await response.json()) as { retry_after?: number };
-    const retryAfter = body.retry_after || 1000;
+    const retryAfter = body.retry_after || fallbackMs;
 
     return retryAfter < 100 ? retryAfter * 1000 : retryAfter;
   } catch {
-    return 1000;
+    return fallbackMs;
   }
 }
 
