@@ -47,6 +47,20 @@ inputs:
     description: "HTTP timeout in milliseconds"
     required: false
     default: "10000"
+  dry_run:
+    description: "Skip the HTTP request and report status=dry_run instead of sending the notification"
+    required: false
+    default: "false"
+
+outputs:
+  sent:
+    description: "'true' si le webhook a été envoyé avec succès, sinon 'false'"
+  status:
+    description: "Statut de la notification : sent | failed | skipped | dry_run"
+  error:
+    description: "Message d'erreur court, chaîne vide en cas de succès"
+  attempts:
+    description: "Nombre de tentatives HTTP effectuées (0 si erreur de configuration)"
 
 runs:
   using: "node20"

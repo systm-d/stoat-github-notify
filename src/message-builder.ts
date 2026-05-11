@@ -14,8 +14,13 @@ export interface StoatPayload {
   embeds: StoatEmbed[];
 }
 
-export function buildPayload(config: ActionConfig, context: GitHubContext): StoatPayload {
+export function buildPayload(config: ActionConfig, context: GitHubContext): StoatPayload | null {
   const event = resolveEvent(config.event, context);
+
+  if (event === null) {
+    return null;
+  }
+
   const runUrl = buildRunUrl(context);
   const title = config.title || buildDefaultTitle(event, context);
   const content = config.message || buildDefaultContent(title, context, runUrl);
@@ -27,13 +32,13 @@ export function buildPayload(config: ActionConfig, context: GitHubContext): Stoa
     embeds: [
       {
         title,
-        description: buildDescription(config, context, runUrl),
+        description: buildDescription(config, event, context, runUrl),
       },
     ],
   };
 }
 
-export function resolveEvent(event: EventType, context: GitHubContext): EventType {
+export function resolveEvent(event: EventType, context: GitHubContext): EventType | null {
   if (event !== "auto") {
     return event;
   }
@@ -56,7 +61,7 @@ export function resolveEvent(event: EventType, context: GitHubContext): EventTyp
     return "push";
   }
 
-  return "custom";
+  return null;
 }
 
 export function buildDefaultTitle(event: EventType, context: GitHubContext): string {
@@ -86,8 +91,7 @@ function buildDefaultContent(title: string, context: GitHubContext, runUrl: stri
   return `${title} on ${context.repository}${suffix}`;
 }
 
-function buildDescription(config: ActionConfig, context: GitHubContext, runUrl: string): string {
-  const event = resolveEvent(config.event, context);
+function buildDescription(config: ActionConfig, event: EventType, context: GitHubContext, runUrl: string): string {
   const lines = buildEventLines(event, context);
 
   lines.push(`Event: ${context.eventName}`);

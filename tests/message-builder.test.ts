@@ -13,6 +13,7 @@ const baseConfig: ActionConfig = {
   includeRunUrl: true,
   failOnError: false,
   timeoutMs: 10000,
+  dryRun: false,
 };
 
 const baseContext: GitHubContext = {
@@ -86,6 +87,16 @@ describe("message builder", () => {
         },
       }),
     ).toBe("deployment_failed");
+  });
+
+  it("returns null when auto resolution has no matching event", () => {
+    expect(resolveEvent("auto", { ...baseContext, eventName: "schedule" })).toBeNull();
+  });
+
+  it("buildPayload returns null when auto resolution has no matching event", () => {
+    const payload = buildPayload({ ...baseConfig, event: "auto" }, { ...baseContext, eventName: "schedule" });
+
+    expect(payload).toBeNull();
   });
 
   it("renders release details from the GitHub event payload", () => {

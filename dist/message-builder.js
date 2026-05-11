@@ -1,6 +1,9 @@
 import { buildRunUrl } from "./github-context.js";
 export function buildPayload(config, context) {
     const event = resolveEvent(config.event, context);
+    if (event === null) {
+        return null;
+    }
     const runUrl = buildRunUrl(context);
     const title = config.title || buildDefaultTitle(event, context);
     const content = config.message || buildDefaultContent(title, context, runUrl);
@@ -11,7 +14,7 @@ export function buildPayload(config, context) {
         embeds: [
             {
                 title,
-                description: buildDescription(config, context, runUrl),
+                description: buildDescription(config, event, context, runUrl),
             },
         ],
     };
@@ -33,7 +36,7 @@ export function resolveEvent(event, context) {
     if (context.eventName === "push") {
         return "push";
     }
-    return "custom";
+    return null;
 }
 export function buildDefaultTitle(event, context) {
     switch (event) {
@@ -59,8 +62,7 @@ function buildDefaultContent(title, context, runUrl) {
     const suffix = runUrl ? `\n${runUrl}` : "";
     return `${title} on ${context.repository}${suffix}`;
 }
-function buildDescription(config, context, runUrl) {
-    const event = resolveEvent(config.event, context);
+function buildDescription(config, event, context, runUrl) {
     const lines = buildEventLines(event, context);
     lines.push(`Event: ${context.eventName}`);
     if (context.workflow) {
