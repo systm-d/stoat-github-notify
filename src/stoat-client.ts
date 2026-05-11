@@ -6,7 +6,21 @@ export interface SendOptions {
   sleepFn?: (ms: number) => Promise<void>;
 }
 
-export async function sendStoatWebhook(payload: StoatPayload, webhookUrl: string, options: SendOptions): Promise<void> {
+export class WebhookError extends Error {
+  constructor(
+    message: string,
+    public readonly attempts: number,
+  ) {
+    super(message);
+    this.name = "WebhookError";
+  }
+}
+
+export async function sendStoatWebhook(
+  payload: StoatPayload,
+  webhookUrl: string,
+  options: SendOptions,
+): Promise<{ attempts: number }> {
   const fetchFn = options.fetchFn || fetch;
   const sleepFn = options.sleepFn || sleep;
 
@@ -18,15 +32,17 @@ export async function sendStoatWebhook(payload: StoatPayload, webhookUrl: string
 
     const retryResponse = await postPayload(fetchFn, webhookUrl, payload, options.timeoutMs);
     if (!retryResponse.ok) {
-      throw new Error(await buildFailureMessage(retryResponse));
+      throw new WebhookError(await buildFailureMessage(retryResponse), 2);
     }
 
-    return;
+    return { attempts: 2 };
   }
 
   if (!response.ok) {
-    throw new Error(await buildFailureMessage(response));
+    throw new WebhookError(await buildFailureMessage(response), 1);
   }
+
+  return { attempts: 1 };
 }
 
 async function postPayload(

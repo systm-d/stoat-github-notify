@@ -13,6 +13,7 @@ const baseConfig: ActionConfig = {
   includeRunUrl: true,
   failOnError: false,
   timeoutMs: 10000,
+  dryRun: false,
 };
 
 const baseContext: GitHubContext = {
@@ -32,6 +33,7 @@ describe("message builder", () => {
   it("builds a default CI failure payload", () => {
     const payload = buildPayload(baseConfig, baseContext);
 
+    expect(payload).not.toBeNull();
     expect(payload).toMatchObject({
       content: "CI failed on systm-d/stoat-github-notify\nhttps://github.com/systm-d/stoat-github-notify/actions/runs/42",
       username: "GitHub",
@@ -41,8 +43,8 @@ describe("message builder", () => {
         },
       ],
     });
-    expect(payload.embeds[0]?.description).toContain("Actor: kevin");
-    expect(payload.embeds[0]?.description).toContain("Commit: 1234567");
+    expect(payload?.embeds[0]?.description).toContain("Actor: kevin");
+    expect(payload?.embeds[0]?.description).toContain("Commit: 1234567");
   });
 
   it("uses custom title and message when provided", () => {
@@ -56,8 +58,13 @@ describe("message builder", () => {
       baseContext,
     );
 
-    expect(payload.content).toBe("Docker image is available.");
-    expect(payload.embeds[0]?.title).toBe("Build finished");
+    expect(payload?.content).toBe("Docker image is available.");
+    expect(payload?.embeds[0]?.title).toBe("Build finished");
+  });
+
+  it("returns null when auto event has no mapping", () => {
+    expect(resolveEvent("auto", { ...baseContext, eventName: "schedule" })).toBeNull();
+    expect(buildPayload({ ...baseConfig, event: "auto" }, { ...baseContext, eventName: "schedule" })).toBeNull();
   });
 
   it("resolves automatic event names", () => {

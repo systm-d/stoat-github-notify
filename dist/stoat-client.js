@@ -1,3 +1,11 @@
+export class WebhookError extends Error {
+    attempts;
+    constructor(message, attempts) {
+        super(message);
+        this.attempts = attempts;
+        this.name = "WebhookError";
+    }
+}
 export async function sendStoatWebhook(payload, webhookUrl, options) {
     const fetchFn = options.fetchFn || fetch;
     const sleepFn = options.sleepFn || sleep;
@@ -7,13 +15,14 @@ export async function sendStoatWebhook(payload, webhookUrl, options) {
         await sleepFn(retryAfter);
         const retryResponse = await postPayload(fetchFn, webhookUrl, payload, options.timeoutMs);
         if (!retryResponse.ok) {
-            throw new Error(await buildFailureMessage(retryResponse));
+            throw new WebhookError(await buildFailureMessage(retryResponse), 2);
         }
-        return;
+        return { attempts: 2 };
     }
     if (!response.ok) {
-        throw new Error(await buildFailureMessage(response));
+        throw new WebhookError(await buildFailureMessage(response), 1);
     }
+    return { attempts: 1 };
 }
 async function postPayload(fetchFn, webhookUrl, payload, timeoutMs) {
     const controller = new AbortController();
