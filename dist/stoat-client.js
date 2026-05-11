@@ -1,19 +1,20 @@
 export async function sendStoatWebhook(payload, webhookUrl, options) {
     const fetchFn = options.fetchFn || fetch;
     const sleepFn = options.sleepFn || sleep;
-    const response = await postPayload(fetchFn, webhookUrl, payload, options.timeoutMs);
-    if (response.status === 429) {
-        const retryAfter = await readRetryAfter(response);
-        await sleepFn(retryAfter);
-        const retryResponse = await postPayload(fetchFn, webhookUrl, payload, options.timeoutMs);
-        if (!retryResponse.ok) {
-            throw new Error(await buildFailureMessage(retryResponse));
+    const maxAttempts = 1 + options.retryCount;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const response = await postPayload(fetchFn, webhookUrl, payload, options.timeoutMs);
+        if (response.ok) {
+            return attempt;
         }
-        return;
-    }
-    if (!response.ok) {
+        if (response.status === 429 && attempt < maxAttempts) {
+            const delay = await readRetryAfter(response, options.retryDelayMs);
+            await sleepFn(delay);
+            continue;
+        }
         throw new Error(await buildFailureMessage(response));
     }
+    throw new Error("Stoat notification failed: no attempts made");
 }
 async function postPayload(fetchFn, webhookUrl, payload, timeoutMs) {
     const controller = new AbortController();
@@ -32,14 +33,14 @@ async function postPayload(fetchFn, webhookUrl, payload, timeoutMs) {
         clearTimeout(timeout);
     }
 }
-async function readRetryAfter(response) {
+async function readRetryAfter(response, fallbackMs) {
     try {
         const body = (await response.json());
-        const retryAfter = body.retry_after || 1000;
+        const retryAfter = body.retry_after || fallbackMs;
         return retryAfter < 100 ? retryAfter * 1000 : retryAfter;
     }
     catch {
-        return 1000;
+        return fallbackMs;
     }
 }
 async function buildFailureMessage(response) {

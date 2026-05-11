@@ -25,6 +25,8 @@ export function readConfig(env = process.env) {
         includeRunUrl: readBooleanInput(env, "include_run_url", true),
         failOnError: readBooleanInput(env, "fail_on_error", false),
         timeoutMs: readPositiveInteger(readInput(env, "timeout_ms") || "10000", "timeout_ms"),
+        retryCount: readNonNegativeInteger(readInput(env, "retry_count") || "1", "retry_count"),
+        retryDelayMs: readPositiveInteger(readInput(env, "retry_delay_ms") || "1000", "retry_delay_ms"),
     };
 }
 export function maskSecret(value) {
@@ -62,6 +64,13 @@ function readPositiveInteger(value, name) {
     const parsed = Number.parseInt(value, 10);
     if (!Number.isFinite(parsed) || parsed <= 0) {
         throw new Error(`Invalid positive integer input for ${name}: ${value}`);
+    }
+    return parsed;
+}
+export function readNonNegativeInteger(value, name) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed < 0 || String(parsed) !== value.trim()) {
+        throw new Error(`Invalid non-negative integer input for ${name}: ${value}`);
     }
     return parsed;
 }

@@ -12,6 +12,8 @@ export async function run() {
         const payload = buildPayload(config, context);
         await sendStoatWebhook(payload, config.webhookUrl, {
             timeoutMs: config.timeoutMs,
+            retryCount: config.retryCount,
+            retryDelayMs: config.retryDelayMs,
         });
         info("Stoat notification sent.");
     }
