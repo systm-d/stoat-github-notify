@@ -13,6 +13,7 @@ const baseConfig: ActionConfig = {
   includeRunUrl: true,
   failOnError: false,
   timeoutMs: 10000,
+  dryRun: false,
 };
 
 const baseContext: GitHubContext = {

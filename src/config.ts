@@ -22,6 +22,7 @@ export interface ActionConfig {
   includeRunUrl: boolean;
   failOnError: boolean;
   timeoutMs: number;
+  dryRun: boolean;
 }
 
 const eventTypes = new Set<EventType>([
@@ -53,6 +54,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ActionConfig {
     includeRunUrl: readBooleanInput(env, "include_run_url", true),
     failOnError: readBooleanInput(env, "fail_on_error", false),
     timeoutMs: readPositiveInteger(readInput(env, "timeout_ms") || "10000", "timeout_ms"),
+    dryRun: readBooleanInput(env, "dry_run", false),
   };
 }
 
