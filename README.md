@@ -78,6 +78,30 @@ jobs:
 | `include_run_url` | no | `true` | Include the GitHub Actions run URL. |
 | `fail_on_error` | no | `false` | Fail the workflow if the Stoat request fails. |
 | `timeout_ms` | no | `10000` | HTTP timeout in milliseconds. |
+| `dry_run` | no | `false` | Skip the HTTP call and only publish `status=dry_run` outputs. |
+
+## Outputs
+
+| Nom | Valeurs possibles | Description |
+| --- | --- | --- |
+| `sent` | `true` / `false` | `true` si le webhook a été envoyé avec succès, sinon `false`. |
+| `status` | `sent` / `failed` / `skipped` / `dry_run` | Issue de la notification : `sent` (envoyée), `failed` (échec HTTP ou configuration), `skipped` (`event: auto` sans correspondance), `dry_run` (`dry_run: true`). |
+| `error` | message court / chaîne vide | Message d'erreur en cas d'échec, chaîne vide sinon. La valeur de `webhook_url` est expurgée. |
+| `attempts` | entier ≥ 0 | Nombre de requêtes HTTP effectuées (`0` si erreur de configuration, `dry_run` ou `skipped` ; `2` si un retry après `429` a eu lieu). |
+
+Example consumer step reading the outputs without parsing the logs:
+
+```yaml
+- id: notify
+  uses: systm-d/stoat-github-notify@v1
+  with:
+    webhook_url: ${{ secrets.STOAT_WEBHOOK_URL }}
+    event: ci_failed
+
+- name: Open a follow-up issue if the notification failed
+  if: steps.notify.outputs.status == 'failed'
+  run: echo "Stoat notification failed after ${{ steps.notify.outputs.attempts }} attempt(s)."
+```
 
 ## Event types
 
