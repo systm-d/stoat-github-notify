@@ -47,6 +47,14 @@ inputs:
     description: "HTTP timeout in milliseconds"
     required: false
     default: "10000"
+  retry_count:
+    description: "Nombre de retries après un 429 (0 = désactivé)"
+    required: false
+    default: "1"
+  retry_delay_ms:
+    description: "Délai de retry en ms si retry_after absent de la réponse"
+    required: false
+    default: "1000"
 
 runs:
   using: "node20"
