@@ -47,6 +47,14 @@ inputs:
     description: "HTTP timeout in milliseconds"
     required: false
     default: "10000"
+  dry_run:
+    description: "Skip the HTTP call and log the payload instead (safe validation mode)"
+    required: false
+    default: "false"
+
+outputs:
+  notification_sent:
+    description: "Whether the webhook was actually called (\"false\" in dry-run)"
 
 runs:
   using: "node20"
