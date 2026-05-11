@@ -16,6 +16,8 @@ export async function run(): Promise<void> {
 
     await sendStoatWebhook(payload, config.webhookUrl, {
       timeoutMs: config.timeoutMs,
+      retryCount: config.retryCount,
+      retryDelayMs: config.retryDelayMs,
     });
 
     info("Stoat notification sent.");
