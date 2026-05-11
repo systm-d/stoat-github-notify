@@ -22,6 +22,8 @@ export interface ActionConfig {
   includeRunUrl: boolean;
   failOnError: boolean;
   timeoutMs: number;
+  retryCount: number;
+  retryDelayMs: number;
 }
 
 const eventTypes = new Set<EventType>([
@@ -53,6 +55,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ActionConfig {
     includeRunUrl: readBooleanInput(env, "include_run_url", true),
     failOnError: readBooleanInput(env, "fail_on_error", false),
     timeoutMs: readPositiveInteger(readInput(env, "timeout_ms") || "10000", "timeout_ms"),
+    retryCount: readNonNegativeInteger(readInput(env, "retry_count") || "1", "retry_count"),
+    retryDelayMs: readPositiveInteger(readInput(env, "retry_delay_ms") || "1000", "retry_delay_ms"),
   };
 }
 
@@ -103,6 +107,16 @@ function readPositiveInteger(value: string, name: string): number {
 
   if (!Number.isFinite(parsed) || parsed <= 0) {
     throw new Error(`Invalid positive integer input for ${name}: ${value}`);
+  }
+
+  return parsed;
+}
+
+export function readNonNegativeInteger(value: string, name: string): number {
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isFinite(parsed) || parsed < 0 || String(parsed) !== value.trim()) {
+    throw new Error(`Invalid non-negative integer input for ${name}: ${value}`);
   }
 
   return parsed;
