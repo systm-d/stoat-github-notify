@@ -25,6 +25,7 @@ export function readConfig(env = process.env) {
         includeRunUrl: readBooleanInput(env, "include_run_url", true),
         failOnError: readBooleanInput(env, "fail_on_error", false),
         timeoutMs: readPositiveInteger(readInput(env, "timeout_ms") || "10000", "timeout_ms"),
+        dryRun: readBooleanInput(env, "dry_run", false),
     };
 }
 export function maskSecret(value) {
